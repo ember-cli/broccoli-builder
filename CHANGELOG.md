@@ -1,4 +1,6 @@
-# master
+# 0.18.0
+
+* Extract `broccoli-builder` from `broccoli`
 
 # 0.17.0
 
