@@ -1,5 +1,7 @@
 # Broccoli-builder
 
+[![Build Status](https://travis-ci.org/ember-cli/broccoli-builder.svg?branch=master)](https://travis-ci.org/ember-cli/broccoli-builder)
+
 <img src="logo/broccoli-logo.generated.png" align="right" height="150">
 
 ## License
