@@ -2,6 +2,7 @@
 broccoli-builder
 ==============================================================================
 
+[![Build Status](https://travis-ci.org/ember-cli/broccoli-builder.svg?branch=0-18-x)](https://travis-ci.org/ember-cli/broccoli-builder)
 
 Installation
 ------------------------------------------------------------------------------
