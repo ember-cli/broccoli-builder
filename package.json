@@ -21,7 +21,7 @@
   "dependencies": {
     "broccoli-kitchen-sink-helpers": "^0.3.0",
     "broccoli-node-info": "1.0.0",
-    "broccoli-slow-trees": "^2.0.0",
+    "broccoli-slow-trees": "^3.0.1",
     "broccoli-source": "^1.1.0",
     "commander": "^2.5.0",
     "connect": "^3.3.3",
@@ -31,14 +31,14 @@
     "mime": "^1.2.11",
     "rimraf": "^2.4.3",
     "rsvp": "^3.0.17",
-    "tmp": "0.0.28",
+    "tmp": "0.0.29",
     "underscore.string": "^3.2.2"
   },
   "devDependencies": {
     "broccoli-plugin": "^1.2.0",
     "chai": "^3.3.0",
-    "chai-as-promised": "^5.1.0",
-    "fixturify": "^0.2.0",
+    "chai-as-promised": "^6.0.0",
+    "fixturify": "^0.3.0",
     "mocha": "^3.0.0",
     "mocha-jshint": "^2.2.5",
     "multidep": "^2.0.0",
