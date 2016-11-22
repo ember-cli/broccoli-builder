@@ -1,3 +1,7 @@
+# 0.18.1
+
+* Add support for mid-build cleanup: https://github.com/ember-cli/broccoli-builder/pull/2
+
 # 0.18.0
 
 * Extract `broccoli-builder` from `broccoli`
