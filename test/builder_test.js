@@ -292,5 +292,32 @@ test('Builder', function (t) {
     })
   })
 
+  test('start/stop events', function (t) {
+    // Can be removed in 1.0.0
+    var builder = new Builder('fooDir')
+    var startWasCalled = 0;
+    var  stopWasCalled = 0;
+    builder.on('start', function() {
+      startWasCalled++;
+    });
+
+    builder.on('end', function() {
+      stopWasCalled++;
+    });
+
+    t.equal(startWasCalled, 0);
+    t.equal(stopWasCalled, 0);
+
+    builder.build(function willReadStringTree (dir) {
+      t.equal(startWasCalled, 1);
+      t.equal(stopWasCalled, 0);
+      t.equal(dir, 'fooDir')
+    }).finally(function() {
+      t.equal(startWasCalled, 1);
+      t.equal(stopWasCalled, 1);
+      t.end()
+    })
+  })
+
   t.end()
 })
