@@ -250,6 +250,7 @@ test('Builder', function (t) {
           id: {
             name: 'parent',
             broccoliNode: true,
+            broccoliId: 0
           },
           stats: {
             own: {},
@@ -261,6 +262,7 @@ test('Builder', function (t) {
           id: {
             name: 'child',
             broccoliNode: true,
+            broccoliId: 1
           },
           stats: {
             own: {},
@@ -272,6 +274,7 @@ test('Builder', function (t) {
           id: {
             name: 'srcDir',
             broccoliNode: true,
+            broccoliId: 2
           },
           stats: {
             own: {},
