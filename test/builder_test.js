@@ -175,19 +175,29 @@ test('Builder', function (t) {
   test('tree graph', function (t) {
     var parent = countingTree(function (readTree) {
       return readTree(child).then(function (dir) {
-        return new RSVP.Promise(function (resolve, reject) {
-          setTimeout(function() { resolve('parentTreeDir') }, 30)
+        return readTree(shared).then(function() {
+          return new RSVP.Promise(function (resolve, reject) {
+            setTimeout(function() { resolve('parentTreeDir') }, 30)
+          })
         })
       })
     }, 'parent')
 
     var child = countingTree(function (readTree) {
-      return readTree('srcDir').then(function (dir) {
+      return readTree(shared).then(function (dir) {
         return new RSVP.Promise(function (resolve, reject) {
           setTimeout(function() { resolve('childTreeDir') }, 20)
         })
       })
     }, 'child')
+
+    var shared = countingTree(function (readTree) {
+      return readTree('srcDir').then(function (dir) {
+        return new RSVP.Promise(function (resolve, reject) {
+          setTimeout(function() { resolve('sharedTreeDir') }, 20)
+        })
+      })
+    }, 'shared')
 
     var timeEqual = function (a, b) {
       t.equal(typeof a, 'number')
@@ -206,20 +216,21 @@ test('Builder', function (t) {
       var parentBroccoliNode = hash.graph
       t.equal(parentBroccoliNode.directory, 'parentTreeDir')
       t.equal(parentBroccoliNode.tree, parent)
-      t.equal(parentBroccoliNode.subtrees.length, 1)
+      t.equal(parentBroccoliNode.subtrees.length, 2)
       var childBroccoliNode = parentBroccoliNode.subtrees[0]
       t.equal(childBroccoliNode.directory, 'childTreeDir')
       t.equal(childBroccoliNode.tree, child)
       t.equal(childBroccoliNode.subtrees.length, 1)
-      var leafBroccoliNode = childBroccoliNode.subtrees[0]
+      var sharedBroccoliNode = childBroccoliNode.subtrees[0]
+      t.equal(sharedBroccoliNode.subtrees.length, 1)
+      var leafBroccoliNode = sharedBroccoliNode.subtrees[0]
       t.equal(leafBroccoliNode.directory, 'srcDir')
       t.equal(leafBroccoliNode.tree, 'srcDir')
       t.equal(leafBroccoliNode.subtrees.length, 0)
 
-
       var json = heimdall.toJSON()
 
-      t.equal(json.nodes.length, 4)
+      t.equal(json.nodes.length, 6)
 
       var parentNode = json.nodes[1]
       timeEqual(parentNode.stats.time.self, 30e6)
@@ -250,17 +261,21 @@ test('Builder', function (t) {
           id: {
             name: 'parent',
             broccoliNode: true,
+            broccoliId: 0,
+            broccoliCachedNode: false
           },
           stats: {
             own: {},
             time: {},
           },
-          children: [2],
+          children: [2, 5],
         }, {
           _id: 2,
           id: {
             name: 'child',
             broccoliNode: true,
+            broccoliId: 1,
+            broccoliCachedNode: false
           },
           stats: {
             own: {},
@@ -270,15 +285,45 @@ test('Builder', function (t) {
         }, {
           _id: 3,
           id: {
+            name: 'shared',
+            broccoliNode: true,
+            broccoliId: 2,
+            broccoliCachedNode: false
+          },
+          stats: {
+            own: {},
+            time: {},
+          },
+          children: [4],
+        }, {
+          _id: 4,
+          id: {
             name: 'srcDir',
             broccoliNode: true,
+            broccoliId: 3,
+            broccoliCachedNode: false
           },
           stats: {
             own: {},
             time: {},
           },
           children: [],
-        }],
+        }, {
+          _id: 5,
+          id: {
+            name: 'shared',
+            broccoliNode: true,
+            broccoliId: 2,
+            broccoliCachedNode: true
+          },
+          stats: {
+            own: {},
+            time: {},
+          },
+          children: [],
+        }
+
+        ],
       })
       t.end()
     })
