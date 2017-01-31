@@ -262,7 +262,8 @@ test('Builder', function (t) {
             name: 'parent',
             broccoliNode: true,
             broccoliId: 0,
-            broccoliCachedNode: false
+            broccoliCachedNode: false,
+            broccoliPluginName: undefined
           },
           stats: {
             own: {},
@@ -275,7 +276,8 @@ test('Builder', function (t) {
             name: 'child',
             broccoliNode: true,
             broccoliId: 1,
-            broccoliCachedNode: false
+            broccoliCachedNode: false,
+            broccoliPluginName: undefined
           },
           stats: {
             own: {},
@@ -288,7 +290,8 @@ test('Builder', function (t) {
             name: 'shared',
             broccoliNode: true,
             broccoliId: 2,
-            broccoliCachedNode: false
+            broccoliCachedNode: false,
+            broccoliPluginName: undefined
           },
           stats: {
             own: {},
@@ -301,7 +304,8 @@ test('Builder', function (t) {
             name: 'srcDir',
             broccoliNode: true,
             broccoliId: 3,
-            broccoliCachedNode: false
+            broccoliCachedNode: false,
+            broccoliPluginName: undefined
           },
           stats: {
             own: {},
@@ -314,7 +318,8 @@ test('Builder', function (t) {
             name: 'shared',
             broccoliNode: true,
             broccoliId: 2,
-            broccoliCachedNode: true
+            broccoliCachedNode: true,
+            broccoliPluginName: undefined
           },
           stats: {
             own: {},
@@ -416,6 +421,36 @@ test('getDescription test', function(t) {
     var result = broccoli.getDescription(fakeNode);
 
     t.equal(result, 'some/path/here/');
+    t.end();
+  });
+
+  t.end();
+});
+
+test('getPluginName', function(t) {
+  function FakeBaseNode() {}
+
+  test('it returns constructor name', function(t) {
+    var fakeNode = new FakeBaseNode();
+    var result = broccoli.getPluginName(fakeNode);
+
+    t.equal(result, 'FakeBaseNode');
+    t.end();
+  });
+
+  test('returns undefined for string nodes', function(t) {
+    var fakeNode = 'some/path/here/';
+    var result = broccoli.getPluginName(fakeNode);
+
+    t.equal(result, undefined);
+    t.end();
+  });
+
+  test('returns undefined for POJO nodes', function(t) {
+    var fakeNode = {};
+    var result = broccoli.getPluginName(fakeNode);
+
+    t.equal(result, undefined);
     t.end();
   });
 
