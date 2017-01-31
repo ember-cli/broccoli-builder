@@ -366,3 +366,58 @@ test('Builder', function (t) {
 
   t.end()
 })
+
+test('getDescription test', function(t) {
+  function FakeBaseNode() {}
+
+  test('annotation is used', function(t) {
+    var fakeNode = new FakeBaseNode();
+    fakeNode.annotation = 'fakeNode: boo';
+
+    var result = broccoli.getDescription(fakeNode);
+
+    t.equal(result, 'fakeNode: boo');
+    t.end();
+  });
+
+  test('description is used', function(t) {
+    var fakeNode = new FakeBaseNode();
+    fakeNode.description = 'fakeNode: boo';
+
+    var result = broccoli.getDescription(fakeNode);
+
+    t.equal(result, 'fakeNode: boo');
+    t.end();
+  });
+
+  test('annotation is used over description', function(t) {
+    var fakeNode = new FakeBaseNode();
+    fakeNode.annotation = 'fakeNode: boo';
+    fakeNode.description = 'fakeNode: who';
+
+    var result = broccoli.getDescription(fakeNode);
+
+    t.equal(result, 'fakeNode: boo');
+    t.end();
+  });
+
+  test('plugin name is used when no other description is present', function(t) {
+    var fakeNode = new FakeBaseNode();
+
+    var result = broccoli.getDescription(fakeNode);
+
+    t.equal(result, 'FakeBaseNode');
+    t.end();
+  });
+
+  test('string trees description is the path itself', function(t) {
+    var fakeNode = 'some/path/here/';
+
+    var result = broccoli.getDescription(fakeNode);
+
+    t.equal(result, 'some/path/here/');
+    t.end();
+  });
+
+  t.end();
+});
