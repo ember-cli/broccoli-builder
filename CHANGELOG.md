@@ -1,3 +1,10 @@
+# 0.18.3
+
+* add broccoliId to heimdal node id
+* Ensure we also instrument the existence of cached nodes
+* Use `node.annotation` for instrumentation if present.
+* Add `broccoliPluginName` to heimdall node information.
+
 # 0.18.1
 
 * Add support for mid-build cleanup: https://github.com/ember-cli/broccoli-builder/pull/2
