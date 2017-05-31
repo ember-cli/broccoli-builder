@@ -160,7 +160,8 @@ test('Builder', function (t) {
         builder.build().then(function () {
           t.equal(true, false, 'should not succeed')
         }).catch(function(reason) {
-          t.equal(reason.message, 'Build Canceled')
+          t.ok(reason.message.indexOf('Build Canceled: Broccoli Builder ran into an error with') !== -1)
+
           return cleaner.then(function() {
             t.equal(tree.cleanupCount, 1)
             t.equal(subtree1.cleanupCount, 0) // never read the second, so we wont clean it up
