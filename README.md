@@ -2,6 +2,8 @@
 broccoli-builder
 ==============================================================================
 
+[![Greenkeeper badge](https://badges.greenkeeper.io/ember-cli/broccoli-builder.svg)](https://greenkeeper.io/)
+
 [![Build Status](https://travis-ci.org/ember-cli/broccoli-builder.svg?branch=0-18-x)](https://travis-ci.org/ember-cli/broccoli-builder)
 [![Build status](https://ci.appveyor.com/api/projects/status/nwnmd48k866a79ed/branch/0-18-x?svg=true)](https://ci.appveyor.com/project/embercli/broccoli-builder/branch/0-18-x)
 
