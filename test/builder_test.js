@@ -330,9 +330,12 @@ test('Builder', function (t) {
         }
 
         ],
+      });
+    }).finally(function() {
+      return builder.cleanup().then(function() {
+        t.end()
       })
-      t.end()
-    })
+    });
   })
 
   test('string tree callback', function (t) {
@@ -369,6 +372,44 @@ test('Builder', function (t) {
       t.end()
     })
   })
+
+  function assertReads(t, builder, actualReads, expectedReads) {
+    return builder.build().then(function (hash) {
+      // ensure depth first order, so the rest of our tests make sense
+      t.deepEqual(actualReads.slice(), expectedReads);
+      actualReads.length = 0; // reset state;
+    });
+  }
+
+  test('test compat api', function(t) {
+    function Plugin(path, inputTrees) {
+      this.name = path;
+      this._path = path;
+      this.inputTrees = inputTrees || [];
+    }
+
+    var actualReads = [];
+
+    Plugin.prototype.rebuild = function(readTree) {
+      actualReads.push(this._path);
+    };
+
+    var a = new Plugin('a');
+    var b = new Plugin('b');
+    var c = new Plugin('c');
+    var d = new Plugin('d', [a, b, c]);
+    var e = new Plugin('e');
+    var f = new Plugin('f');
+    var g = new Plugin('g', [f]);
+    var h = new Plugin('h', [d, e, g]);
+
+    var builder = new Builder(h);
+    return builder.build().then(function() {
+      return builder.cleanup();
+    }).finally(function() {
+      t.end();
+    });
+  });
 
   t.end()
 })
