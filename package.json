@@ -30,7 +30,7 @@
     "silent-error": "^1.0.1"
   },
   "devDependencies": {
-    "tap": "^0.4.8"
+    "tap": "^10.7.0"
   },
   "engines": {
     "node": ">= 0.10.0"
