@@ -1,3 +1,7 @@
+# 0.18.9
+
+* Add line and column number details to the error payload.
+
 # 0.18.4
 
 * Use `node.annotation` for instrumentation if present.
