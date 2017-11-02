@@ -160,7 +160,7 @@ test('Builder', function (t) {
         builder.build().then(function () {
           t.equal(true, false, 'should not succeed')
         }).catch(function(reason) {
-          t.ok(reason.message.indexOf('Build Canceled: Broccoli Builder ran into an error with') !== -1)
+          t.ok(reason.message.indexOf('Build Canceled') !== -1)
 
           return cleaner.then(function() {
             t.equal(tree.cleanupCount, 1)
