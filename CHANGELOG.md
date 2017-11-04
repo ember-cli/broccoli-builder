@@ -1,3 +1,7 @@
+# 0.18.10
+
+* Ensure good error feedback when a `SilentError` is thrown.
+*
 # 0.18.9
 
 * Add line and column number details to the error payload.
