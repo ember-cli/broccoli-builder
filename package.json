@@ -1,7 +1,7 @@
 {
   "name": "broccoli-builder",
   "description": "Fast client-side asset builder",
-  "version": "0.18.10",
+  "version": "0.18.11",
   "author": "Jo Liss <joliss42@gmail.com>",
   "main": "lib/builder.js",
   "files": [
