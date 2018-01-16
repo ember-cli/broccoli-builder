@@ -86,7 +86,7 @@ test('Builder', function (t) {
         builder.build().then(function (hash) {
           t.equal(hash.directory, 'foo')
           builder.build().catch(function (err) {
-            t.equal(err.message, 'The Broccoli Plugin: [object Object] failed with:')
+            t.ok(/Build Canceled: Broccoli Builder ran into an error with `undefined` plugin./.test(err.message))
             return builder.cleanup()
           })
           .finally(function() {
