@@ -1,12 +1,9 @@
 {
-  "name": "broccoli-builder",
+  "name": "ember-cli-broccoli",
   "description": "Fast client-side asset builder",
   "version": "0.18.11",
   "author": "Jo Liss <joliss42@gmail.com>",
-  "main": "lib/builder.js",
-  "files": [
-    "lib"
-  ],
+  "main": "lib/index.js",
   "license": "MIT",
   "keywords": [
     "builder",
@@ -18,11 +15,14 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/ember-cli/broccoli-builder"
+    "url": "https://github.com/ember-cli/broccoli"
   },
-  "homepage": "https://github.com/ember-cli/broccoli-builder",
+  "homepage": "https://github.com/ember-cli/broccoli",
   "dependencies": {
+    "findup-sync": "^0.2.1",
+    "handlebars": "^4.0.4",
     "heimdalljs": "^0.2.0",
+    "mime": "^1.2.11",
     "promise-map-series": "^0.2.1",
     "quick-temp": "^0.1.2",
     "rimraf": "^2.2.8",
