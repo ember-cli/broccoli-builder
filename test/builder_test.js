@@ -1,6 +1,7 @@
-var test = require('tap').test
 var broccoli = require('..')
 var Builder = broccoli.Builder
+var chai = require('chai'), expect = chai.expect
+var chaiAsPromised = require('chai-as-promised'); chai.use(chaiAsPromised)
 var RSVP = require('rsvp')
 var heimdall = require('heimdalljs')
 
@@ -28,77 +29,64 @@ function countingTree (readFn, description) {
   }
 }
 
-
-test('Builder', function (t) {
-  test('core functionality', function (t) {
-    t.end()
-
-    test('build', function (t) {
-      test('passes through string tree', function (t) {
+describe('Builder', function() {
+  describe('core functionality', function() {
+    describe('build', function() {
+      it('passes through string tree', function() {
         var builder = new Builder('someDir')
-        builder.build().then(function (hash) {
-          t.equal(hash.directory, 'someDir')
-          t.end()
-        })
+        return expect(builder.build()).to.eventually.have.property('directory', 'someDir')
       })
 
-      test('calls read on the given tree object', function (t) {
+      it('calls read on the given tree object', function() {
         var builder = new Builder({
-          read: function (readTree) { return 'someDir' }
+          read: function(readTree) { return 'someDir' }
         })
-        builder.build().then(function (hash) {
-          t.equal(hash.directory, 'someDir')
-          t.end()
-        })
+        return expect(builder.build()).to.eventually.have.property('directory', 'someDir')
       })
-
-      t.end()
     })
 
-    test('readTree deduplicates', function (t) {
-      var subtree = new countingTree(function (readTree) { return 'foo' })
+    it('readTree deduplicates', function() {
+      var subtree = new countingTree(function(readTree) { return 'foo' })
       var builder = new Builder({
-        read: function (readTree) {
-          return readTree(subtree).then(function (hash) {
+        read: function(readTree) {
+          return readTree(subtree).then(function(hash) {
             var dirPromise = readTree(subtree) // read subtree again
-            t.ok(dirPromise.then, 'is promise, not string')
+            expect(dirPromise.then).to.be.a('function')
             return dirPromise
           })
         }
       })
-      builder.build().then(function (hash) {
-        t.equal(hash.directory, 'foo')
-        t.equal(subtree.readCount, 1)
-        t.end()
+      return builder.build().then(function(hash) {
+        expect(hash.directory).to.equal('foo')
+        expect(subtree.readCount).to.equal(1)
       })
     })
 
-    test('cleanup', function (t) {
-      test('is called on all trees called ever', function (t) {
-        var tree = countingTree(function (readTree) {
+    describe('cleanup', function() {
+      it('is called on all trees called ever', function() {
+        var tree = countingTree(function(readTree) {
           // Interesting edge case: Read subtree1 on the first read, subtree2 on
           // the second
           return readTree(this.readCount === 1 ? subtree1 : subtree2)
         })
-        var subtree1 = countingTree(function (readTree) { return 'foo' })
-        var subtree2 = countingTree(function (readTree) { throw new Error('bar') })
+        var subtree1 = countingTree(function(readTree) { return 'foo' })
+        var subtree2 = countingTree(function(readTree) { throw new Error('bar') })
         var builder = new Builder(tree)
-        builder.build().then(function (hash) {
-          t.equal(hash.directory, 'foo')
-          builder.build().catch(function (err) {
-            t.ok(/Build Canceled: Broccoli Builder ran into an error with `undefined` plugin./.test(err.message))
+        return builder.build().then(function(hash) {
+          expect(hash.directory).to.equal('foo')
+          builder.build().catch(function(err) {
+            expect(err.message).to.contain('Build Canceled: Broccoli Builder ran into an error with `undefined` plugin.')
             return builder.cleanup()
           })
           .finally(function() {
-            t.equal(tree.cleanupCount, 1)
-            t.equal(subtree1.cleanupCount, 1)
-            t.equal(subtree2.cleanupCount, 1)
-            t.end();
+            expect(tree.cleanupCount).to.equal(1)
+            expect(subtree1.cleanupCount).to.equal(1)
+            expect(subtree2.cleanupCount).to.equal(1)
           });
         })
       })
 
-      test('cannot build already cleanedup build', function (t) {
+      it('cannot build already cleanedup build', function (done) {
         var tree = countingTree(function (readTree) {
           // Interesting edge case: Read subtree1 on the first read, subtree2 on
           // the second
@@ -109,18 +97,18 @@ test('Builder', function (t) {
         var builder = new Builder(tree)
         builder.cleanup();
         builder.build().then(function (hash) {
-          t.equal(false, true, 'should not succeed')
-          t.end();
+          expect(false).to.equal(true, 'should not succeed');
+          done();
         }).catch(function(e) {
-          t.equal(tree.cleanupCount, 0)
-          t.equal(subtree1.cleanupCount, 0)
-          t.equal(subtree2.cleanupCount, 0)
-          t.equal(e.message, 'cannot build this builder, as it has been previously canceled');
-          t.end();
+          expect(tree.cleanupCount).to.equal(0)
+          expect(subtree1.cleanupCount).to.equal(0)
+          expect(subtree2.cleanupCount).to.equal(0)
+          expect(e.message).to.equal('cannot build this builder, as it has been previously canceled');;
+          done();
         });
       })
 
-      test('a build step run once the build is cancelled will not wrong, and the build will fail', function (t) {
+      it('a build step run once the build is cancelled will not wrong, and the build will fail', function (done) {
         var tree = countingTree(function (readTree) {
           // Interesting edge case: Read subtree1 on the first read, subtree2 on
           // the second
@@ -132,19 +120,19 @@ test('Builder', function (t) {
         var build = builder.build()
         builder.cleanup();
         build.then(function (hash) {
-          t.equal(false, true, 'should not succeed')
-          t.end();
+          expect(false).to.equal(true, 'should not succeed');
+          done();
         }).catch(function(reason) {
-          t.equal(tree.cleanupCount, 0)
-          t.equal(subtree1.cleanupCount, 0)
-          t.equal(subtree2.cleanupCount, 0)
-          t.equal(reason.message, 'Build Canceled');
-          t.equal(reason.isSilentError, true);
-          t.end();
+          expect(tree.cleanupCount).to.equal(0)
+          expect(subtree1.cleanupCount).to.equal(0)
+          expect(subtree2.cleanupCount).to.equal(0)
+          expect(reason.message).to.equal('Build Canceled');
+          expect(reason.isSilentError).to.equal(true);;
+          done();
         });
       })
 
-      test('is calls trees so far read (after one step)', function (t) {
+      it('is calls trees so far read (after one step)', function (done) {
         var cleaner;
         var tree = countingTree(function (readTree) {
           // Interesting edge case: Read subtree1 on the first read, subtree2 on
@@ -158,35 +146,35 @@ test('Builder', function (t) {
         var builder = new Builder(tree)
 
         builder.build().then(function () {
-          t.equal(true, false, 'should not succeed')
+          expect(true).to.equal(false, 'should not succeed')
+          done();
         }).catch(function(reason) {
-          t.ok(reason.message.indexOf('Build Canceled') !== -1)
+          expect(reason.message).to.contain('Build Canceled')
 
           return cleaner.then(function() {
-            t.equal(tree.cleanupCount, 1)
-            t.equal(subtree1.cleanupCount, 0) // never read the second, so we wont clean it up
-            t.end()
+            expect(tree.cleanupCount).to.equal(1)
+            expect(subtree1.cleanupCount).to.equal(0) // never read the second, so we wont clean it up
+            done();
           })
         })
       })
-      t.end()
     })
   })
 
-  test('tree graph', function (t) {
-    var parent = countingTree(function (readTree) {
-      return readTree(child).then(function (dir) {
+  it('tree graph', function() {
+    var parent = countingTree(function(readTree) {
+      return readTree(child).then(function(dir) {
         return readTree(shared).then(function() {
-          return new RSVP.Promise(function (resolve, reject) {
+          return new RSVP.Promise(function(resolve, reject) {
             setTimeout(function() { resolve('parentTreeDir') }, 30)
           })
         })
       })
     }, 'parent')
 
-    var child = countingTree(function (readTree) {
-      return readTree(shared).then(function (dir) {
-        return new RSVP.Promise(function (resolve, reject) {
+    var child = countingTree(function(readTree) {
+      return readTree(shared).then(function(dir) {
+        return new RSVP.Promise(function(resolve, reject) {
           setTimeout(function() { resolve('childTreeDir') }, 20)
         })
       })
@@ -199,155 +187,157 @@ test('Builder', function (t) {
         })
       })
     }, 'shared')
-
-    var timeEqual = function (a, b) {
-      t.equal(typeof a, 'number')
+  
+    var timeEqual = function(a, b) {
+      expect(a).to.be.a('number')
 
       // do not run timing assertions in Travis builds
       // the actual results of process.hrtime() are not
       // reliable
       if (process.env.CI !== 'true') {
-        t.ok(a >= b - 5e7 && a <= b + 5e7, a + ' should be within ' + b + ' +/- 5e7')
+        expect(a).to.be.within(b - 5e7, b + 5e7)
       }
     }
 
     var builder = new Builder(parent)
-    builder.build().then(function (hash) {
-      t.equal(hash.directory, 'parentTreeDir')
+    return builder.build().then(function(hash) {
+      expect(hash.directory).to.equal('parentTreeDir')
       var parentBroccoliNode = hash.graph
-      t.equal(parentBroccoliNode.directory, 'parentTreeDir')
-      t.equal(parentBroccoliNode.tree, parent)
-      t.equal(parentBroccoliNode.subtrees.length, 2)
+      expect(parentBroccoliNode.directory).to.equal('parentTreeDir')
+      expect(parentBroccoliNode.tree).to.equal(parent)
+      expect(parentBroccoliNode.subtrees.length).to.equal(2)
       var childBroccoliNode = parentBroccoliNode.subtrees[0]
-      t.equal(childBroccoliNode.directory, 'childTreeDir')
-      t.equal(childBroccoliNode.tree, child)
-      t.equal(childBroccoliNode.subtrees.length, 1)
+      expect(childBroccoliNode.directory).to.equal('childTreeDir')
+      expect(childBroccoliNode.tree).to.equal(child)
+      expect(childBroccoliNode.subtrees.length).to.equal(1)
       var sharedBroccoliNode = childBroccoliNode.subtrees[0]
-      t.equal(sharedBroccoliNode.subtrees.length, 1)
+      expect(sharedBroccoliNode.subtrees.length).to.equal(1)      
       var leafBroccoliNode = sharedBroccoliNode.subtrees[0]
-      t.equal(leafBroccoliNode.directory, 'srcDir')
-      t.equal(leafBroccoliNode.tree, 'srcDir')
-      t.equal(leafBroccoliNode.subtrees.length, 0)
+      expect(leafBroccoliNode.directory).to.equal('srcDir')
+      expect(leafBroccoliNode.tree).to.equal('srcDir')
+      expect(leafBroccoliNode.subtrees.length).to.equal(0)
+    })
 
-      var json = heimdall.toJSON()
+    var json = heimdall.toJSON()
 
-      t.equal(json.nodes.length, 6)
+    expect(json.nodes.length).to.equal(6)
 
-      var parentNode = json.nodes[1]
-      timeEqual(parentNode.stats.time.self, 30e6)
+    var parentNode = json.nodes[1]
+    timeEqual(parentNode.stats.time.self, 30e6)
 
-      var childNode = json.nodes[2]
-      timeEqual(childNode.stats.time.self, 20e6)
+    var childNode = json.nodes[2]
+    timeEqual(childNode.stats.time.self, 20e6)
 
-      var leafNode = json.nodes[3]
-      timeEqual(leafNode.stats.time.self, 0)
+    var leafNode = json.nodes[3]
+    timeEqual(leafNode.stats.time.self, 0)
 
-      for (var i=0; i<json.nodes.length; ++i) {
-        delete json.nodes[i].stats.time.self
+    for (var i=0; i<json.nodes.length; ++i) {
+      delete json.nodes[i].stats.time.self
+    }
+    
+    expect(json).to.deep.equal({
+      nodes: [{
+        _id: 0,
+        id: {
+          name: 'heimdall',
+        },
+        stats: {
+          own: {},
+          time: {},
+        },
+        children: [1],
+      }, {
+        _id: 1,
+        id: {
+          name: 'parent',
+          broccoliNode: true,
+          broccoliId: 0,
+          broccoliCachedNode: false,
+          broccoliPluginName: undefined
+        },
+        stats: {
+          own: {},
+          time: {},
+        },
+        children: [2, 5],
+      }, {
+        _id: 2,
+        id: {
+          name: 'child',
+          broccoliNode: true,
+          broccoliId: 1,
+          broccoliCachedNode: false,
+          broccoliPluginName: undefined
+        },
+        stats: {
+          own: {},
+          time: {},
+        },
+        children: [3],
+      }, {
+        _id: 3,
+        id: {
+          name: 'shared',
+          broccoliNode: true,
+          broccoliId: 2,
+          broccoliCachedNode: false,
+          broccoliPluginName: undefined
+        },
+        stats: {
+          own: {},
+          time: {},
+        },
+        children: [4],
+      }, {
+        _id: 4,
+        id: {
+          name: 'srcDir',
+          broccoliNode: true,
+          broccoliId: 3,
+          broccoliCachedNode: false,
+          broccoliPluginName: undefined
+        },
+        stats: {
+          own: {},
+          time: {},
+        },
+        children: [],
+      }, {
+        _id: 5,
+        id: {
+          name: 'shared',
+          broccoliNode: true,
+          broccoliId: 2,
+          broccoliCachedNode: true,
+          broccoliPluginName: undefined
+        },
+        stats: {
+          own: {},
+          time: {},
+        },
+        children: [],
       }
 
-      t.deepEqual(json, {
-        nodes: [{
-          _id: 0,
-          id: {
-            name: 'heimdall',
-          },
-          stats: {
-            own: {},
-            time: {},
-          },
-          children: [1],
-        }, {
-          _id: 1,
-          id: {
-            name: 'parent',
-            broccoliNode: true,
-            broccoliId: 0,
-            broccoliCachedNode: false,
-            broccoliPluginName: undefined
-          },
-          stats: {
-            own: {},
-            time: {},
-          },
-          children: [2, 5],
-        }, {
-          _id: 2,
-          id: {
-            name: 'child',
-            broccoliNode: true,
-            broccoliId: 1,
-            broccoliCachedNode: false,
-            broccoliPluginName: undefined
-          },
-          stats: {
-            own: {},
-            time: {},
-          },
-          children: [3],
-        }, {
-          _id: 3,
-          id: {
-            name: 'shared',
-            broccoliNode: true,
-            broccoliId: 2,
-            broccoliCachedNode: false,
-            broccoliPluginName: undefined
-          },
-          stats: {
-            own: {},
-            time: {},
-          },
-          children: [4],
-        }, {
-          _id: 4,
-          id: {
-            name: 'srcDir',
-            broccoliNode: true,
-            broccoliId: 3,
-            broccoliCachedNode: false,
-            broccoliPluginName: undefined
-          },
-          stats: {
-            own: {},
-            time: {},
-          },
-          children: [],
-        }, {
-          _id: 5,
-          id: {
-            name: 'shared',
-            broccoliNode: true,
-            broccoliId: 2,
-            broccoliCachedNode: true,
-            broccoliPluginName: undefined
-          },
-          stats: {
-            own: {},
-            time: {},
-          },
-          children: [],
-        }
-
-        ],
-      })
-      t.end()
+      ],
     })
   })
 
-  test('string tree callback', function (t) {
+  it('string tree callback', function() {
     var builder = new Builder('fooDir')
-    builder.build(function willReadStringTree (dir) {
-      t.equal(dir, 'fooDir')
-      t.end()
+    var callbackCalled = false
+    return builder.build(function willReadStringTree(dir) {
+      expect(dir).to.equal('fooDir')
+      callbackCalled = true
+    }).then(function() {
+      expect(callbackCalled).to.be.ok
     })
   })
 
-  test('start/stop events', function (t) {
+  it('start/stop events', function (done) {
     // Can be removed in 1.0.0
     var builder = new Builder('fooDir')
     var startWasCalled = 0;
-    var  stopWasCalled = 0;
+    var stopWasCalled = 0;
     builder.on('start', function() {
       startWasCalled++;
     });
@@ -356,104 +346,98 @@ test('Builder', function (t) {
       stopWasCalled++;
     });
 
-    t.equal(startWasCalled, 0);
-    t.equal(stopWasCalled, 0);
+    expect(startWasCalled).to.equal(0);
+    expect(stopWasCalled).to.equal(0);
 
     builder.build(function willReadStringTree (dir) {
-      t.equal(startWasCalled, 1);
-      t.equal(stopWasCalled, 0);
-      t.equal(dir, 'fooDir')
+      expect(startWasCalled).to.equal(1);
+      expect(stopWasCalled).to.equal(0);
+      expect(dir).to.equal('fooDir')
     }).finally(function() {
-      t.equal(startWasCalled, 1);
-      t.equal(stopWasCalled, 1);
-      t.end()
+      expect(startWasCalled).to.equal(1);
+      expect(stopWasCalled).to.equal(1);
+      done();
     })
   })
-
-  t.end()
 })
 
-test('getDescription test', function(t) {
+describe('getDescription test', function() {
   function FakeBaseNode() {}
 
-  test('annotation is used', function(t) {
+  it('annotation is used', function(done) {
     var fakeNode = new FakeBaseNode();
     fakeNode.annotation = 'fakeNode: boo';
 
     var result = broccoli.getDescription(fakeNode);
 
-    t.equal(result, 'fakeNode: boo');
-    t.end();
+    expect(result).to.equal('fakeNode: boo');
+    done();
   });
 
-  test('description is used', function(t) {
+  it('description is used', function(done) {
     var fakeNode = new FakeBaseNode();
     fakeNode.description = 'fakeNode: boo';
 
     var result = broccoli.getDescription(fakeNode);
 
-    t.equal(result, 'fakeNode: boo');
-    t.end();
+    expect(result).to.equal('fakeNode: boo');
+    done();
   });
 
-  test('annotation is used over description', function(t) {
+  it('annotation is used over description', function(done) {
     var fakeNode = new FakeBaseNode();
     fakeNode.annotation = 'fakeNode: boo';
     fakeNode.description = 'fakeNode: who';
 
     var result = broccoli.getDescription(fakeNode);
 
-    t.equal(result, 'fakeNode: boo');
-    t.end();
+    expect(result).to.equal('fakeNode: boo');
+    done();
   });
 
-  test('plugin name is used when no other description is present', function(t) {
+  it('plugin name is used when no other description is present', function(done) {
     var fakeNode = new FakeBaseNode();
 
     var result = broccoli.getDescription(fakeNode);
 
-    t.equal(result, 'FakeBaseNode');
-    t.end();
+    expect(result).to.equal('FakeBaseNode');
+    done();
   });
 
-  test('string trees description is the path itself', function(t) {
+  it('string trees description is the path itself', function(done) {
     var fakeNode = 'some/path/here/';
 
     var result = broccoli.getDescription(fakeNode);
 
-    t.equal(result, 'some/path/here/');
-    t.end();
+    expect(result).to.equal('some/path/here/');
+    done();
   });
-
-  t.end();
 });
 
-test('getPluginName', function(t) {
+describe('getPluginName', function() {
   function FakeBaseNode() {}
 
-  test('it returns constructor name', function(t) {
+  it('it returns constructor name', function(done) {
     var fakeNode = new FakeBaseNode();
     var result = broccoli.getPluginName(fakeNode);
 
-    t.equal(result, 'FakeBaseNode');
-    t.end();
+    expect(result).to.equal('FakeBaseNode');
+    done();
   });
 
-  test('returns undefined for string nodes', function(t) {
+  it('returns undefined for string nodes', function(done) {
     var fakeNode = 'some/path/here/';
     var result = broccoli.getPluginName(fakeNode);
 
-    t.equal(result, undefined);
-    t.end();
+    expect(result).to.equal(undefined);
+    done();
   });
 
-  test('returns undefined for POJO nodes', function(t) {
+  it('returns undefined for POJO nodes', function(done) {
     var fakeNode = {};
     var result = broccoli.getPluginName(fakeNode);
 
-    t.equal(result, undefined);
-    t.end();
+    expect(result).to.equal(undefined);
+    done();
   });
-
-  t.end();
 });
