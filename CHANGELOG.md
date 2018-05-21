@@ -1,3 +1,8 @@
+# 0.18.11
+
+* Remove BROCCOLI_WARN_READ_API environment variable, always output warnings for use of old `.read`/`.rebuild`
+api. Use broccoli-plugin instead: https://github.com/broccolijs/broccoli-plugin
+
 # 0.18.10
 
 * Ensure good error feedback when a `SilentError` is thrown.
