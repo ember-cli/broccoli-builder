@@ -1,7 +1,12 @@
-# 0.18.11
+# 0.18.12
 
 * Remove BROCCOLI_WARN_READ_API environment variable, always output warnings for use of old `.read`/`.rebuild`
 api. Use broccoli-plugin instead: https://github.com/broccolijs/broccoli-plugin
+* Begin leveraging newer `broccoli-plugin` API's for determining the annotation string to use for a given node.
+
+# 0.18.11
+
+* Fix error message munging to include correct stack.
 
 # 0.18.10
 
