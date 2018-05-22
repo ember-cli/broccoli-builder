@@ -1,3 +1,7 @@
+# 0.18.13
+
+* Temporary revert of leveraging newer `broccoli-plugin` APIs for determining annotation string to use.
+*
 # 0.18.12
 
 * Remove BROCCOLI_WARN_READ_API environment variable, always output warnings for use of old `.read`/`.rebuild`
