@@ -1,3 +1,7 @@
+# 0.18.14
+
+* Bring back `broccoli-plugin` API usage for annotation string (fixed issue with 0.8.12...)
+
 # 0.18.13
 
 * Temporary revert of leveraging newer `broccoli-plugin` APIs for determining annotation string to use.
