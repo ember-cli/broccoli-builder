@@ -4,28 +4,43 @@ var chai = require('chai'), expect = chai.expect
 var chaiAsPromised = require('chai-as-promised'); chai.use(chaiAsPromised)
 var RSVP = require('rsvp')
 var heimdall = require('heimdalljs')
+var Plugin = require('broccoli-plugin')
 
 RSVP.on('error', function(error) {
   throw error
 })
 
-function countingTree (readFn, description) {
-  return {
-    read: function (readTree) {
-      this.readCount++
-      return readFn.call(this, readTree)
-    },
-    readCount: 0,
-    description: description,
-    cleanup: function () {
-      var self = this
+class CallbackTree extends Plugin {
+  constructor(readFn, description) {
+    super([], { annotation: description });
+    this.readFn = readFn;
+  }
 
-      return RSVP.resolve()
-        .then(function() {
-          self.cleanupCount++
-        })
-    },
-    cleanupCount: 0
+  read(readTree) {
+    return this.readFn.call(this, readTree);
+  }
+
+  // We're purposefully working in "old broccoli" mode so we need the read/cleanup API
+  _checkOverrides() {}
+}
+
+class CountingTree extends CallbackTree {
+  constructor(readFn, description) {
+    super(readFn, description);
+    this.readCount = 0;
+    this.cleanupCount = 0;
+  }
+
+  read(readTree) {
+    this.readCount++;
+    return super.read(readTree);
+  }
+
+  cleanup() {
+    return RSVP.resolve().then(() => {
+      this.cleanupCount++;
+      super.cleanup();
+    });
   }
 }
 
@@ -38,24 +53,20 @@ describe('Builder', function() {
       })
 
       it('calls read on the given tree object', function() {
-        var builder = new Builder({
-          read: function(readTree) { return 'someDir' }
-        })
+        var builder = new Builder(new CallbackTree((readTree) => 'someDir'))
         return expect(builder.build()).to.eventually.have.property('directory', 'someDir')
       })
     })
 
     it('readTree deduplicates', function() {
-      var subtree = new countingTree(function(readTree) { return 'foo' })
-      var builder = new Builder({
-        read: function(readTree) {
-          return readTree(subtree).then(function(hash) {
-            var dirPromise = readTree(subtree) // read subtree again
-            expect(dirPromise.then).to.be.a('function')
-            return dirPromise
-          })
-        }
-      })
+      var subtree = new CountingTree(function(readTree) { return 'foo' })
+      var builder = new Builder(new CallbackTree((readTree) => {
+        return readTree(subtree).then(function(hash) {
+          var dirPromise = readTree(subtree) // read subtree again
+          expect(dirPromise.then).to.be.a('function')
+          return dirPromise
+        })
+      }))
       return builder.build().then(function(hash) {
         expect(hash.directory).to.equal('foo')
         expect(subtree.readCount).to.equal(1)
@@ -64,18 +75,18 @@ describe('Builder', function() {
 
     describe('cleanup', function() {
       it('is called on all trees called ever', function() {
-        var tree = countingTree(function(readTree) {
+        var tree = new CountingTree(function(readTree) {
           // Interesting edge case: Read subtree1 on the first read, subtree2 on
           // the second
           return readTree(this.readCount === 1 ? subtree1 : subtree2)
         })
-        var subtree1 = countingTree(function(readTree) { return 'foo' })
-        var subtree2 = countingTree(function(readTree) { throw new Error('bar') })
+        var subtree1 = new CountingTree(function(readTree) { return 'foo' })
+        var subtree2 = new CountingTree(function(readTree) { throw new Error('bar') })
         var builder = new Builder(tree)
         return builder.build().then(function(hash) {
           expect(hash.directory).to.equal('foo')
           builder.build().catch(function(err) {
-            expect(err.message).to.contain('Build Canceled: Broccoli Builder ran into an error with `undefined` plugin.')
+            expect(err.message).to.contain('Build Canceled: Broccoli Builder ran into an error with `CountingTree` plugin.')
             return builder.cleanup()
           })
           .finally(function() {
@@ -87,13 +98,13 @@ describe('Builder', function() {
       })
 
       it('cannot build already cleanedup build', function (done) {
-        var tree = countingTree(function (readTree) {
+        var tree = new CountingTree(function (readTree) {
           // Interesting edge case: Read subtree1 on the first read, subtree2 on
           // the second
           return readTree(this.readCount === 1 ? subtree1 : subtree2)
         })
-        var subtree1 = countingTree(function (readTree) { return 'foo' })
-        var subtree2 = countingTree(function (readTree) { throw new Error('bar') })
+        var subtree1 = new CountingTree(function (readTree) { return 'foo' })
+        var subtree2 = new CountingTree(function (readTree) { throw new Error('bar') })
         var builder = new Builder(tree)
         builder.cleanup();
         builder.build().then(function (hash) {
@@ -109,13 +120,13 @@ describe('Builder', function() {
       })
 
       it('a build step run once the build is cancelled will not wrong, and the build will fail', function (done) {
-        var tree = countingTree(function (readTree) {
+        var tree = new CountingTree(function (readTree) {
           // Interesting edge case: Read subtree1 on the first read, subtree2 on
           // the second
           return readTree(this.readCount === 1 ? subtree1 : subtree2)
         })
-        var subtree1 = countingTree(function (readTree) { return 'foo' })
-        var subtree2 = countingTree(function (readTree) { throw new Error('bar') })
+        var subtree1 = new CountingTree(function (readTree) { return 'foo' })
+        var subtree2 = new CountingTree(function (readTree) { throw new Error('bar') })
         var builder = new Builder(tree)
         var build = builder.build()
         builder.cleanup();
@@ -134,13 +145,13 @@ describe('Builder', function() {
 
       it('is calls trees so far read (after one step)', function (done) {
         var cleaner;
-        var tree = countingTree(function (readTree) {
+        var tree = new CountingTree(function (readTree) {
           // Interesting edge case: Read subtree1 on the first read, subtree2 on
           // the second
           cleaner = builder.cleanup();
           return readTree(subtree1);
         })
-        var subtree1 = countingTree(function (readTree) {
+        var subtree1 = new CountingTree(function (readTree) {
           return 'foo'
         })
         var builder = new Builder(tree)
@@ -162,7 +173,7 @@ describe('Builder', function() {
   })
 
   it('tree graph', function() {
-    var parent = countingTree(function(readTree) {
+    var parent = new CountingTree(function(readTree) {
       return readTree(child).then(function(dir) {
         return readTree(shared).then(function() {
           return new RSVP.Promise(function(resolve, reject) {
@@ -172,7 +183,7 @@ describe('Builder', function() {
       })
     }, 'parent')
 
-    var child = countingTree(function(readTree) {
+    var child = new CountingTree(function(readTree) {
       return readTree(shared).then(function(dir) {
         return new RSVP.Promise(function(resolve, reject) {
           setTimeout(function() { resolve('childTreeDir') }, 20)
@@ -180,7 +191,7 @@ describe('Builder', function() {
       })
     }, 'child')
 
-    var shared = countingTree(function (readTree) {
+    var shared = new CountingTree(function (readTree) {
       return readTree('srcDir').then(function (dir) {
         return new RSVP.Promise(function (resolve, reject) {
           setTimeout(function() { resolve('sharedTreeDir') }, 20)
