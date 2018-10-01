@@ -3,6 +3,7 @@ var Builder = broccoli.Builder
 var chai = require('chai'), expect = chai.expect
 var chaiAsPromised = require('chai-as-promised'); chai.use(chaiAsPromised)
 var RSVP = require('rsvp')
+var sinon = require('sinon')
 var heimdall = require('heimdalljs')
 var Plugin = require('broccoli-plugin')
 
@@ -170,25 +171,25 @@ describe('Builder', function() {
         })
       })
     })
-    it('throws error if an old .read/.rebuild plugin is passed', done => {
+    it('logs error if an old .read/.rebuild plugin is passed', () => {
+      // "spy" on `console.warn()`
+      let spy = sinon.spy(console, 'warn');
+
       var builder = new Builder({
         read() {
           return 'someDir';
         }
       });
 
-      builder
+      return builder
         .build()
         .then(function() {
-          expect(true).to.equal(false, 'should not succeed');
-          done();
-        })
-        .catch(err => {
-          var expected = '[API] Warning: The .read and .rebuild APIs are no longer supported';
-          expected += '[API] Warning: Offending plugin: [object Object]';
-          expected += '[API] Warning: For details see https://github.com/broccolijs/broccoli/issues/374';
-          expect(err.message).to.equal(expected);
-          done();
+          // assert that it was called with the correct value
+          sinon.assert.calledWith(spy, '[API] Warning: The .read and .rebuild APIs will stop working in the next Broccoli version');
+          sinon.assert.calledWith(spy, '[API] Warning: For details see https://github.com/broccolijs/broccoli/issues/374');
+          sinon.assert.calledWith(spy, '[API] Warning: Use broccoli-plugin instead: https://github.com/broccolijs/broccoli-plugin');
+          sinon.assert.calledWith(spy, '[API] Warning: Plugin uses .read/.rebuild API: [object Object]');
+          spy.restore();
         });
     });
   })
